@@ -1,0 +1,271 @@
+@import "tailwindcss";
+
+/* ============================================================
+   PAPINWIT — Portfolio Theme System (Tailwind v4)
+   ------------------------------------------------------------
+   Architecture mirrors the VANA reference:
+     1. @theme          → default tokens (signal-cyan) + utilities
+     2. [data-theme]    → palette overrides, OUTSIDE @layer so they
+                          always beat @theme's :root output
+     3. @layer base     → resets, body, selection, focus
+     4. @layer components → reusable primitives (.btn, .eyebrow …)
+
+   Set the theme on <html data-theme="signal-cyan"> in layout.tsx.
+   Swap at runtime:
+     document.documentElement.setAttribute('data-theme', 'warm-ember')
+
+   Registering the palette in @theme means Tailwind generates
+   utilities from every token — bg-surface, text-accent,
+   text-muted, border-border, rounded-card, font-mono, etc.
+   ============================================================ */
+
+@theme {
+  /* ---- Color tokens — default palette: signal-cyan ---- */
+  --color-bg: #0b0d10;
+  --color-surface: #14171c;
+  --color-surface-2: #1b1f26;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.16);
+  --color-text: #e7e9ee;
+  --color-muted: #868d99;
+  --color-accent: #2dd4bf;
+  --color-accent-2: #f59e0b;
+  --color-accent-subtle: rgba(45, 212, 191, 0.1);
+
+  /* ---- Radius ---- */
+  --radius-card: 12px;
+
+  /* ---- Fonts ----
+     Real families are injected by next/font in layout.tsx via
+     these source variables. See the note at the bottom of the file. */
+  --font-display: var(--font-space-grotesk), system-ui, sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+/* ============================================================
+   THEME OVERRIDES
+   Unlayered + attribute selector on <html>, so specificity and
+   source order both beat the @theme :root output.
+   ============================================================ */
+
+/* 1 — Signal Cyan (signal + status LED) */
+[data-theme="signal-cyan"] {
+  --color-bg: #0b0d10;
+  --color-surface: #14171c;
+  --color-surface-2: #1b1f26;
+  --color-text: #e7e9ee;
+  --color-muted: #868d99;
+  --color-accent: #2dd4bf;
+  --color-accent-2: #f59e0b;
+  --color-accent-subtle: rgba(45, 212, 191, 0.1);
+}
+
+/* 2 — Terminal Green */
+[data-theme="terminal-green"] {
+  --color-bg: #0a0f0c;
+  --color-surface: #111811;
+  --color-surface-2: #182118;
+  --color-text: #e8ede9;
+  --color-muted: #7e8b82;
+  --color-accent: #4ade80;
+  --color-accent-2: #a3e635;
+  --color-accent-subtle: rgba(74, 222, 128, 0.1);
+}
+
+/* 3 — Deep Indigo */
+[data-theme="deep-indigo"] {
+  --color-bg: #0a0c12;
+  --color-surface: #12151e;
+  --color-surface-2: #181c28;
+  --color-text: #e6e9f0;
+  --color-muted: #828a9c;
+  --color-accent: #60a5fa;
+  --color-accent-2: #818cf8;
+  --color-accent-subtle: rgba(96, 165, 250, 0.1);
+}
+
+/* 4 — Violet Dusk */
+[data-theme="violet-dusk"] {
+  --color-bg: #0d0a12;
+  --color-surface: #16121e;
+  --color-surface-2: #1e1828;
+  --color-text: #eae7f0;
+  --color-muted: #8a829c;
+  --color-accent: #a78bfa;
+  --color-accent-2: #f472b6;
+  --color-accent-subtle: rgba(167, 139, 250, 0.1);
+}
+
+/* 5 — Warm Ember */
+[data-theme="warm-ember"] {
+  --color-bg: #100c0a;
+  --color-surface: #1a1411;
+  --color-surface-2: #241b16;
+  --color-text: #f0eae6;
+  --color-muted: #9c8a82;
+  --color-accent: #fb923c;
+  --color-accent-2: #fbbf24;
+  --color-accent-subtle: rgba(251, 146, 60, 0.1);
+}
+
+/* 6 — Ice Steel */
+[data-theme="ice-steel"] {
+  --color-bg: #0c0e11;
+  --color-surface: #151920;
+  --color-surface-2: #1c212a;
+  --color-text: #e9ecef;
+  --color-muted: #868d96;
+  --color-accent: #7dd3fc;
+  --color-accent-2: #cbd5e1;
+  --color-accent-subtle: rgba(125, 211, 252, 0.1);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* smooth the cross-fade when swapping themes */
+    transition:
+      background-color 0.4s ease,
+      color 0.4s ease;
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+}
+
+/* ============================================================
+   COMPONENTS
+   Reusable primitives. In @layer components so plain utilities
+   (p-4, text-lg …) can still override them at the call site.
+   Section/card layout stays in the React components as utilities.
+   ============================================================ */
+@layer components {
+  /* Mono eyebrow — terminal-comment style: `// about` */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    color: var(--color-accent);
+  }
+
+  /* Display section heading */
+  .section-heading {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.625rem, 4vw, 2.5rem);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  /* Accent divider rule */
+  .divider {
+    width: 2.5rem;
+    height: 2px;
+    background-color: var(--color-accent);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    padding: 0.75rem 1.375rem;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-border-strong);
+    color: var(--color-text);
+    background-color: transparent;
+    cursor: pointer;
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease,
+      background-color 0.2s ease;
+  }
+  .btn:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+  .btn--solid {
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-bg);
+  }
+  .btn--solid:hover {
+    background-color: var(--color-accent-2);
+    border-color: var(--color-accent-2);
+    color: var(--color-bg);
+  }
+
+  /* Tech tag / pill */
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--color-accent);
+    background-color: var(--color-accent-subtle);
+    border: 1px solid var(--color-accent-subtle);
+    border-radius: 6px;
+    padding: 0.1875rem 0.5rem;
+    white-space: nowrap;
+  }
+
+  /* Status dot — pulsing "available for work" indicator */
+  .status-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+    background-color: var(--color-accent-2);
+    animation: status-pulse 2.4s infinite;
+  }
+}
+
+@keyframes status-pulse {
+  0% {
+    box-shadow: 0 0 0 0
+      color-mix(in srgb, var(--color-accent-2) 60%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 9px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .status-dot {
+    animation: none;
+  }
+  body {
+    transition: none;
+  }
+}
