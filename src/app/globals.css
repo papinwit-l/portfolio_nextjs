@@ -258,11 +258,35 @@
   }
 }
 
+@keyframes terminal-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Blinking block cursor for the terminal contact section */
+.terminal-cursor {
+  display: inline-block;
+  width: 0.55ch;
+  height: 1.05em;
+  vertical-align: text-bottom;
+  background-color: var(--color-accent);
+  animation: terminal-blink 1.06s steps(1) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
   .status-dot {
+    animation: none;
+  }
+  .terminal-cursor {
     animation: none;
   }
   body {
