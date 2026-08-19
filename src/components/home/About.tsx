@@ -1,4 +1,5 @@
 import Reveal from "@/components/shared/Reveal";
+import DecodeHeading from "@/components/shared/DecodeHeading";
 
 const STATS = [
   { n: "7+", l: "projects shipped" },
@@ -18,9 +19,10 @@ export default function About() {
 
         <div className="mt-[18px] grid gap-12 md:grid-cols-[1.2fr_1fr] md:items-start">
           <Reveal>
-            <h2 className="section-heading">
-              I own the whole stack &mdash; down to the wire.
-            </h2>
+            <DecodeHeading
+              className="section-heading"
+              text="I own the whole stack — down to the wire."
+            />
             <div className="divider mt-5" />
             <p className="mt-4 max-w-[52ch] text-muted">
               I build{" "}

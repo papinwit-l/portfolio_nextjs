@@ -15,7 +15,7 @@ export default function ProjectCard({ project }: { project: Project }) {
   const showImage = Boolean(project.image) && state !== "error";
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-card border border-border bg-surface transition-[transform,border-color] duration-200 hover:-translate-y-[3px] hover:border-accent">
+    <article className="group flex flex-col overflow-hidden rounded-card border border-border bg-surface transition-[transform,border-color] duration-200 hover:-translate-y-[3px] hover:border-accent hover:bg-bg">
       {/* Thumbnail */}
       <div className="relative aspect-[16/10] overflow-hidden bg-surface-2">
         {project.wip && (
@@ -47,8 +47,31 @@ export default function ProjectCard({ project }: { project: Project }) {
 
       {/* Body */}
       <div className="flex flex-1 flex-col gap-[10px] p-[18px]">
-        <h3 className="font-display text-[18px] font-medium">{project.name}</h3>
-        <p className="flex-1 text-[13.5px] text-muted">{project.description}</p>
+        {/* Title — switches to a mono console command on hover (no layout shift) */}
+        <h3 className="font-display text-[18px] font-medium group-hover:font-mono">
+          <span
+            aria-hidden
+            className="mr-1 font-mono text-accent opacity-0 transition-all duration-200 hidden group-hover:inline-block group-hover:opacity-100"
+          >
+            $
+          </span>
+          {project.name}
+          {/* wrapper is what's toggled, so it doesn't fight the cursor's own animation */}
+          <span aria-hidden className="ml-1 hidden group-hover:inline-block">
+            <span className="terminal-cursor" />
+          </span>
+        </h3>
+
+        {/* Description — output marker fades in on hover, text stays put */}
+        <p className="flex-1 text-[13.5px] text-muted group-hover:font-mono">
+          <span
+            aria-hidden
+            className="mr-1 font-mono text-accent/70 opacity-0 hidden group-hover:inline-block transition-all duration-200 group-hover:opacity-100"
+          >
+            &gt;
+          </span>
+          {project.description}
+        </p>
 
         <div className="flex flex-wrap gap-[6px]">
           {project.tags.map((t) => (

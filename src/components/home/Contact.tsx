@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import DecodeHeading from "@/components/shared/DecodeHeading";
 
 /* Each step is a typed command + its printed output. */
 type Step = { cmd: string; out: ReactNode };
@@ -128,9 +129,10 @@ export default function Contact() {
     >
       <div className="mx-auto max-w-[1080px] px-7">
         <span className="eyebrow">// contact</span>
-        <h2 className="section-heading mt-[18px]">
-          Let&rsquo;s build something.
-        </h2>
+        <DecodeHeading
+          className="section-heading mt-[18px]"
+          text="Let's build something."
+        />
 
         {/* Terminal window */}
         <div

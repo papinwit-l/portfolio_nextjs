@@ -1,5 +1,6 @@
 import { groups, projects } from "@/data/projects";
 import ProjectCard from "./ProjectCard";
+import DecodeHeading from "@/components/shared/DecodeHeading";
 
 export default function Work() {
   return (
@@ -9,9 +10,10 @@ export default function Work() {
     >
       <div className="mx-auto max-w-[1080px] px-7">
         <span className="eyebrow">// selected work</span>
-        <h2 className="section-heading mt-[18px]">
-          Things I&rsquo;ve built &amp; shipped.
-        </h2>
+        <DecodeHeading
+          className="section-heading mt-[18px]"
+          text="Things I've built & shipped."
+        />
 
         {groups.map((group) => {
           const items = projects.filter((p) => p.group === group.id);
