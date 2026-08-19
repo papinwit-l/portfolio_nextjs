@@ -39,7 +39,7 @@ export default function Hero() {
         className="pointer-events-none absolute inset-0 z-[1]"
         style={{
           background:
-            "linear-gradient(90deg, var(--color-bg) 0%, color-mix(in srgb, var(--color-bg) 55%, transparent) 38%, transparent 70%)",
+            "linear-gradient(90deg, color-mix(in srgb, var(--color-bg) 80%, transparent) 0%, color-mix(in srgb, var(--color-bg) 30%, transparent) 42%, transparent 66%)",
         }}
       />
 

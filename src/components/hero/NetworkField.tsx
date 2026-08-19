@@ -8,15 +8,13 @@ import * as THREE from "three";
    Tunables
    ------------------------------------------------------------------ */
 const NODE_COUNT = 70;
-const CONNECT_FACTOR = 0.16; // link distance as a fraction of the smaller viewport dim
-const INFLUENCE_FACTOR = 0.22; // pointer "brighten" radius, same units
-const MAX_SEGMENTS = 1400; // upper bound on drawn links (buffer is preallocated)
+const CONNECT_FACTOR = 0.16; // node-to-node link distance (fraction of min viewport dim)
+const CURSOR_FACTOR = 0.22; // how far the cursor reaches to wire up nodes
+const INFLUENCE_FACTOR = 0.26; // node brightening radius around the cursor
+const MAX_SEGMENTS = 1400; // upper bound on ambient links (buffer preallocated)
 
 /* ------------------------------------------------------------------
-   Read the current accent straight from the CSS variable, and keep it
-   in sync when the theme switches. The swatch flips [data-theme] on
-   <html>, so a MutationObserver on that attribute is all we need —
-   no per-frame getComputedStyle (which would force reflow).
+   Accent, synced to the active theme via [data-theme] on <html>.
    ------------------------------------------------------------------ */
 function readAccent(): string {
   if (typeof window === "undefined") return "#2DD4BF";
@@ -54,62 +52,100 @@ function usePrefersReducedMotion(): boolean {
 }
 
 /* ------------------------------------------------------------------
-   The network itself. Positions/velocities/colors live in Float32Arrays
-   that we mutate in place every frame — React never re-renders for the
-   animation, it only owns the initial buffers.
+   The network. Buffers are mutated in place each frame; React only owns
+   the initial arrays.
    ------------------------------------------------------------------ */
 function Network({ accent, reduced }: { accent: string; reduced: boolean }) {
-  const { viewport, pointer, invalidate } = useThree();
+  const { viewport, gl } = useThree();
   const pointsRef = useRef<THREE.Points>(null);
   const linesRef = useRef<THREE.LineSegments>(null);
+  const cursorRef = useRef<THREE.LineSegments>(null);
 
-  // Initial node buffers — built once. z is a small spread for subtle depth.
-  const { positions, velocities, colors } = useMemo(() => {
-    const w = viewport.width;
-    const h = viewport.height;
-    const positions = new Float32Array(NODE_COUNT * 3);
-    const velocities = new Float32Array(NODE_COUNT * 3);
-    const colors = new Float32Array(NODE_COUNT * 3);
-    for (let i = 0; i < NODE_COUNT; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * w;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * h;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 2;
-      velocities[i * 3] = (Math.random() - 0.5) * 0.06;
-      velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.06;
-    }
-    return { positions, velocities, colors };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Pointer state (normalized -1..1) + whether it's active and on-canvas.
+  const pointer = useRef({ x: 0, y: 0 });
+  const interactiveRef = useRef(false);
+  const onScreenRef = useRef(false);
+  const [, setInteractive] = useState(false);
 
-  // Preallocated line buffer (two endpoints × xyz per segment).
+  const seeded = useRef(false);
+
+  const { positions, velocities, colors } = useMemo(
+    () => ({
+      positions: new Float32Array(NODE_COUNT * 3),
+      velocities: new Float32Array(NODE_COUNT * 3),
+      colors: new Float32Array(NODE_COUNT * 3),
+    }),
+    [],
+  );
+
+  // Ambient node-to-node links.
   const linePositions = useMemo(
     () => new Float32Array(MAX_SEGMENTS * 2 * 3),
     [],
   );
 
-  // Accent as a THREE.Color; recomputed only when the theme changes.
+  // Cursor-to-node links (at most one per node) with their own colors.
+  const cursorPositions = useMemo(
+    () => new Float32Array(NODE_COUNT * 2 * 3),
+    [],
+  );
+  const cursorColors = useMemo(() => new Float32Array(NODE_COUNT * 2 * 3), []);
+
   const accentColor = useMemo(() => new THREE.Color(accent), [accent]);
 
-  // In reduced-motion (frameloop="demand"), nudge a single re-render so the
-  // static field repaints in the new accent after a theme switch.
+  // Detect + track a real mouse/pen; ignore touch. Window-level so the
+  // overlays above the canvas can't swallow it.
   useEffect(() => {
-    invalidate();
-  }, [accent, invalidate]);
+    const el = gl.domElement;
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
+      if (!interactiveRef.current) {
+        interactiveRef.current = true;
+        setInteractive(true);
+      }
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return;
+      const nx = ((e.clientX - r.left) / r.width) * 2 - 1;
+      const ny = -(((e.clientY - r.top) / r.height) * 2 - 1);
+      pointer.current.x = nx;
+      pointer.current.y = ny;
+      // Only "reach" when the cursor is actually over the hero canvas.
+      onScreenRef.current =
+        e.clientX >= r.left &&
+        e.clientX <= r.right &&
+        e.clientY >= r.top &&
+        e.clientY <= r.bottom;
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [gl]);
 
   useFrame(() => {
     const pts = pointsRef.current;
     const lns = linesRef.current;
-    if (!pts || !lns) return;
+    const cur = cursorRef.current;
+    if (!pts || !lns || !cur) return;
 
-    const halfW = viewport.width / 2;
-    const halfH = viewport.height / 2;
-    const minDim = Math.min(viewport.width, viewport.height);
+    const w = viewport.width;
+    const h = viewport.height;
+    if (w === 0 || h === 0) return;
 
-    // Pointer in world units (pointer is normalized -1..1, y-up).
-    const px = pointer.x * halfW;
-    const py = pointer.y * halfH;
+    const halfW = w / 2;
+    const halfH = h / 2;
+    const minDim = Math.min(w, h);
 
-    // 1) Drift + bounce off the viewport edges.
+    if (!seeded.current) {
+      for (let i = 0; i < NODE_COUNT; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * w;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * h;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 2;
+        velocities[i * 3] = (Math.random() - 0.5) * 0.06;
+        velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.06;
+      }
+      seeded.current = true;
+    }
+
+    // 1) Drift (skipped under reduced-motion).
     if (!reduced) {
       for (let i = 0; i < NODE_COUNT; i++) {
         positions[i * 3] += velocities[i * 3];
@@ -121,21 +157,34 @@ function Network({ accent, reduced }: { accent: string; reduced: boolean }) {
       }
     }
 
-    // 2) Per-node brightness: full accent near the pointer, dim far away.
-    const influence = minDim * INFLUENCE_FACTOR;
-    const inf2 = influence * influence;
-    for (let i = 0; i < NODE_COUNT; i++) {
-      const dx = positions[i * 3] - px;
-      const dy = positions[i * 3 + 1] - py;
-      const d2 = dx * dx + dy * dy;
-      const t = d2 < inf2 ? 1 - d2 / inf2 : 0;
-      const intensity = 0.45 + 0.55 * t;
-      colors[i * 3] = accentColor.r * intensity;
-      colors[i * 3 + 1] = accentColor.g * intensity;
-      colors[i * 3 + 2] = accentColor.b * intensity;
+    const active = interactiveRef.current && onScreenRef.current;
+    const px = pointer.current.x * halfW;
+    const py = pointer.current.y * halfH;
+
+    // 2) Node brightness — a gentle lift near the cursor.
+    if (active) {
+      const influence = minDim * INFLUENCE_FACTOR;
+      const inf2 = influence * influence;
+      for (let i = 0; i < NODE_COUNT; i++) {
+        const dx = positions[i * 3] - px;
+        const dy = positions[i * 3 + 1] - py;
+        const d2 = dx * dx + dy * dy;
+        const t = d2 < inf2 ? 1 - d2 / inf2 : 0;
+        const k = 0.5 + 0.5 * t;
+        colors[i * 3] = accentColor.r * k;
+        colors[i * 3 + 1] = accentColor.g * k;
+        colors[i * 3 + 2] = accentColor.b * k;
+      }
+    } else {
+      const k = 0.72;
+      for (let i = 0; i < NODE_COUNT; i++) {
+        colors[i * 3] = accentColor.r * k;
+        colors[i * 3 + 1] = accentColor.g * k;
+        colors[i * 3 + 2] = accentColor.b * k;
+      }
     }
 
-    // 3) Rebuild links between nearby nodes (O(n²), fine at this count).
+    // 3) Ambient node-to-node links.
     const connect = minDim * CONNECT_FACTOR;
     const cd2 = connect * connect;
     let seg = 0;
@@ -157,14 +206,51 @@ function Network({ accent, reduced }: { accent: string; reduced: boolean }) {
       }
     }
 
-    // 4) Flag the GPU buffers dirty and set how much of the line buffer to draw.
+    // 4) Cursor-to-node links — the network reaching for the pointer.
+    //    Brighter the closer a node is; faded via per-vertex color.
+    let cseg = 0;
+    if (active) {
+      const reach = minDim * CURSOR_FACTOR;
+      const reach2 = reach * reach;
+      for (let i = 0; i < NODE_COUNT; i++) {
+        const dx = positions[i * 3] - px;
+        const dy = positions[i * 3 + 1] - py;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < reach2) {
+          const prox = 1 - Math.sqrt(d2) / reach; // 0 at edge, 1 at cursor
+          const o = cseg * 6;
+          // node endpoint
+          cursorPositions[o] = positions[i * 3];
+          cursorPositions[o + 1] = positions[i * 3 + 1];
+          cursorPositions[o + 2] = positions[i * 3 + 2];
+          // cursor endpoint
+          cursorPositions[o + 3] = px;
+          cursorPositions[o + 4] = py;
+          cursorPositions[o + 5] = 0;
+          const nodeK = 0.1 + 0.5 * prox; // dimmer at the node
+          const cursorK = 0.4 + 0.6 * prox; // brightest at the cursor
+          cursorColors[o] = accentColor.r * nodeK;
+          cursorColors[o + 1] = accentColor.g * nodeK;
+          cursorColors[o + 2] = accentColor.b * nodeK;
+          cursorColors[o + 3] = accentColor.r * cursorK;
+          cursorColors[o + 4] = accentColor.g * cursorK;
+          cursorColors[o + 5] = accentColor.b * cursorK;
+          cseg++;
+        }
+      }
+    }
+
+    // 5) Upload + draw ranges.
     pts.geometry.attributes.position.needsUpdate = true;
     pts.geometry.attributes.color.needsUpdate = true;
+
     lns.geometry.attributes.position.needsUpdate = true;
     lns.geometry.setDrawRange(0, seg * 2);
-
-    // Keep the line color following the theme.
     (lns.material as THREE.LineBasicMaterial).color.copy(accentColor);
+
+    cur.geometry.attributes.position.needsUpdate = true;
+    cur.geometry.attributes.color.needsUpdate = true;
+    cur.geometry.setDrawRange(0, cseg * 2);
   });
 
   return (
@@ -184,6 +270,7 @@ function Network({ accent, reduced }: { accent: string; reduced: boolean }) {
         />
       </points>
 
+      {/* Ambient node-to-node links */}
       <lineSegments ref={linesRef}>
         <bufferGeometry>
           <bufferAttribute
@@ -198,14 +285,28 @@ function Network({ accent, reduced }: { accent: string; reduced: boolean }) {
           toneMapped={false}
         />
       </lineSegments>
+
+      {/* Cursor-to-node links — brighter, per-vertex faded */}
+      <lineSegments ref={cursorRef}>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            args={[cursorPositions, 3]}
+          />
+          <bufferAttribute attach="attributes-color" args={[cursorColors, 3]} />
+        </bufferGeometry>
+        <lineBasicMaterial
+          vertexColors
+          transparent
+          opacity={0.9}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </lineSegments>
     </>
   );
 }
 
-/* ------------------------------------------------------------------
-   Canvas wrapper. Transparent (alpha) so the page background shows
-   through and the field inherits whatever theme is active.
-   ------------------------------------------------------------------ */
 export default function NetworkField() {
   const accent = useAccent();
   const reduced = usePrefersReducedMotion();
@@ -215,7 +316,7 @@ export default function NetworkField() {
       dpr={[1, 2]}
       gl={{ antialias: true, alpha: true }}
       camera={{ position: [0, 0, 5], fov: 75 }}
-      frameloop={reduced ? "demand" : "always"}
+      frameloop="always"
       style={{ width: "100%", height: "100%" }}
     >
       <Network accent={accent} reduced={reduced} />
