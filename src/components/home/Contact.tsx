@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import DecodeHeading from "@/components/shared/DecodeHeading";
+import DecodeEffect from "@/components/shared/DecodeEffect";
+import DecodeEffectLoop from "@/components/shared/DecodeEffectLoop";
 
 /* Each step is a typed command + its printed output. */
 type Step = { cmd: string; out: ReactNode };
@@ -128,11 +129,12 @@ export default function Contact() {
       className="scroll-mt-[62px] border-t border-border py-[90px]"
     >
       <div className="mx-auto max-w-[1080px] px-7">
-        <span className="eyebrow">// contact</span>
-        <DecodeHeading
-          className="section-heading mt-[18px]"
-          text="Let's build something."
-        />
+        <DecodeEffectLoop holdMs={3000}>
+          <span className="eyebrow">// contact</span>
+        </DecodeEffectLoop>
+        <DecodeEffect>
+          <h2 className="section-heading mt-[18px]">Let’s build something.</h2>
+        </DecodeEffect>
 
         {/* Terminal window */}
         <div

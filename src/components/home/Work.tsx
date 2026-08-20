@@ -1,6 +1,7 @@
 import { groups, projects } from "@/data/projects";
 import ProjectCard from "./ProjectCard";
-import DecodeHeading from "@/components/shared/DecodeHeading";
+import DecodeEffect from "@/components/shared/DecodeEffect";
+import DecodeEffectLoop from "@/components/shared/DecodeEffectLoop";
 
 export default function Work() {
   return (
@@ -9,11 +10,14 @@ export default function Work() {
       className="scroll-mt-[62px] border-t border-border py-[90px]"
     >
       <div className="mx-auto max-w-[1080px] px-7">
-        <span className="eyebrow">// selected work</span>
-        <DecodeHeading
-          className="section-heading mt-[18px]"
-          text="Things I've built & shipped."
-        />
+        <DecodeEffectLoop holdMs={3000}>
+          <span className="eyebrow">// selected work</span>
+        </DecodeEffectLoop>
+        <DecodeEffect>
+          <h2 className="section-heading mt-[18px]">
+            Things I’ve built & shipped.
+          </h2>
+        </DecodeEffect>
 
         {groups.map((group) => {
           const items = projects.filter((p) => p.group === group.id);

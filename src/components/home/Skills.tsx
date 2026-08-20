@@ -1,18 +1,12 @@
 import Reveal from "@/components/shared/Reveal";
 import SkillFlow from "./SkillFlow";
-import DecodeHeading from "@/components/shared/DecodeHeading";
+import DecodeEffect from "@/components/shared/DecodeEffect";
+import DecodeEffectLoop from "@/components/shared/DecodeEffectLoop";
 
 const GROUPS: { label: string; items: string[] }[] = [
   {
     label: "frontend",
-    items: [
-      "React",
-      "Next.js",
-      "Javascript",
-      "TypeScript",
-      "Tailwind CSS",
-      "Vite",
-    ],
+    items: ["React", "Next.js", "TypeScript", "Tailwind CSS", "Vite"],
   },
   {
     label: "backend",
@@ -53,11 +47,12 @@ export default function Skills() {
       className="scroll-mt-[62px] border-t border-border bg-surface py-[90px]"
     >
       <div className="mx-auto max-w-[1080px] px-7">
-        <span className="eyebrow">// stack</span>
-        <DecodeHeading
-          className="section-heading mt-[18px]"
-          text="Tools of the trade."
-        />
+        <DecodeEffectLoop holdMs={3000}>
+          <span className="eyebrow">// stack</span>
+        </DecodeEffectLoop>
+        <DecodeEffect>
+          <h2 className="section-heading mt-[18px]">Tools of the trade.</h2>
+        </DecodeEffect>
         <div className="divider mt-5" />
 
         {/* Packet-flow pipeline — desktop only (labels shrink too far on mobile) */}

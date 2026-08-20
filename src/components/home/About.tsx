@@ -1,5 +1,6 @@
 import Reveal from "@/components/shared/Reveal";
-import DecodeHeading from "@/components/shared/DecodeHeading";
+import DecodeEffect from "@/components/shared/DecodeEffect";
+import DecodeEffectLoop from "../shared/DecodeEffectLoop";
 
 const STATS = [
   { n: "7+", l: "projects shipped" },
@@ -15,14 +16,17 @@ export default function About() {
       className="scroll-mt-[62px] border-t border-border bg-surface py-[90px]"
     >
       <div className="mx-auto max-w-[1080px] px-7">
-        <span className="eyebrow">// about</span>
+        <DecodeEffectLoop holdMs={3000}>
+          <span className="eyebrow">// about</span>
+        </DecodeEffectLoop>
 
         <div className="mt-[18px] grid gap-12 md:grid-cols-[1.2fr_1fr] md:items-start">
           <Reveal>
-            <DecodeHeading
-              className="section-heading"
-              text="I own the whole stack — down to the wire."
-            />
+            <DecodeEffect>
+              <h2 className="section-heading">
+                I own the whole stack — down to the wire.
+              </h2>
+            </DecodeEffect>
             <div className="divider mt-5" />
             <p className="mt-4 max-w-[52ch] text-muted">
               I build{" "}
