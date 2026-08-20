@@ -22,9 +22,14 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
+// Canonical URL: Vercel's production domain on deploy, localhost in dev.
+// Swap in a custom domain here later if you add one.
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "http://localhost:3000";
+
 export const metadata: Metadata = {
-  // TODO: set to your real deployed domain
-  metadataBase: new URL("https://papinwit.dev"),
+  metadataBase: new URL(siteUrl),
   title: "Papinwit Lertwassana — Full-Stack Developer",
   description:
     "Full-stack developer in Bangkok building production web apps end to end — Next.js, Express, Prisma, and headless WordPress — with a foundation in carrier-grade network infrastructure.",
