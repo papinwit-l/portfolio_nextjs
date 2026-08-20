@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useState } from "react";
 import type { Project } from "@/data/projects";
+import ProjectModal from "./ProjectModal";
+import DecodeEffectHover from "../shared/DecodeEffectHover";
 
 type LoadState = "loading" | "loaded" | "error";
 
@@ -11,11 +13,12 @@ export default function ProjectCard({ project }: { project: Project }) {
   const [state, setState] = useState<LoadState>(
     project.image ? "loading" : "error",
   );
+  const [showModal, setShowModal] = useState(false);
 
   const showImage = Boolean(project.image) && state !== "error";
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-card border border-border bg-surface transition-[transform,border-color] duration-200 hover:-translate-y-[3px] hover:border-accent hover:bg-bg">
+    <article className="group flex flex-col overflow-hidden rounded-card border border-border bg-surface transition-[transform,border-color,background-color] duration-200 hover:-translate-y-[3px] hover:border-accent hover:bg-bg">
       {/* Thumbnail */}
       <div className="relative aspect-[16/10] overflow-hidden bg-surface-2">
         {project.wip && (
@@ -47,31 +50,36 @@ export default function ProjectCard({ project }: { project: Project }) {
 
       {/* Body */}
       <div className="flex flex-1 flex-col gap-[10px] p-[18px]">
-        {/* Title — switches to a mono console command on hover (no layout shift) */}
+        {/* Title — display at rest, mono command on hover (single line, no reflow) */}
         <h3 className="font-display text-[18px] font-medium group-hover:font-mono">
+          {/* opacity-only gate: reserves width at rest, so no shift on hover */}
           <span
             aria-hidden
-            className="mr-1 font-mono text-accent opacity-0 transition-all duration-200 hidden group-hover:inline-block group-hover:opacity-100"
+            className="mr-1 hidden font-mono text-accent opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-hover:inline-block"
           >
             $
           </span>
-          {project.name}
-          {/* wrapper is what's toggled, so it doesn't fight the cursor's own animation */}
+          <DecodeEffectHover>
+            <span>{project.name}</span>
+          </DecodeEffectHover>
+          {/* wrapper toggles display so it doesn't fight the cursor's own blink */}
           <span aria-hidden className="ml-1 hidden group-hover:inline-block">
             <span className="terminal-cursor" />
           </span>
         </h3>
 
-        {/* Description — output marker fades in on hover, text stays put */}
-        <p className="flex-1 text-[13.5px] text-muted group-hover:font-mono">
+        {/* Description — mono ALWAYS so the hover never reflows the card */}
+        <div className="flex-1 text-[13.5px] text-muted group-hover:font-mono">
           <span
             aria-hidden
-            className="mr-1 font-mono text-accent/70 opacity-0 hidden group-hover:inline-block transition-all duration-200 group-hover:opacity-100"
+            className="mr-1 hidden text-accent/70 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-hover:inline-block"
           >
             &gt;
           </span>
-          {project.description}
-        </p>
+          <DecodeEffectHover>
+            <span>{project.description}</span>
+          </DecodeEffectHover>
+        </div>
 
         <div className="flex flex-wrap gap-[6px]">
           {project.tags.map((t) => (
@@ -82,6 +90,13 @@ export default function ProjectCard({ project }: { project: Project }) {
         </div>
 
         <div className="mt-1 flex flex-wrap gap-4 border-t border-border pt-3 font-mono text-xs">
+          <button
+            type="button"
+            onClick={() => setShowModal(true)}
+            className="text-accent transition-colors hover:text-accent-2"
+          >
+            Details
+          </button>
           <a
             href={project.url}
             target="_blank"
@@ -103,6 +118,10 @@ export default function ProjectCard({ project }: { project: Project }) {
           ))}
         </div>
       </div>
+
+      {showModal && (
+        <ProjectModal project={project} onClose={() => setShowModal(false)} />
+      )}
     </article>
   );
 }
