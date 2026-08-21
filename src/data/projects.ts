@@ -15,10 +15,10 @@ export interface Project {
   image?: string;
   /* Longer write-up shown in the detail modal. Falls back to `description`. */
   longDescription?: string;
-  /* YouTube video id (the part after /watch?v=). When set, the modal autoplays
-     a muted scroll-through; otherwise it shows the static screenshot. Use an
-     UNLISTED video. e.g. youtubeId: "dQw4w9WgXcQ" */
-  youtubeId?: string;
+  /* Self-hosted scroll-through video (e.g. "/videos/kailani.mp4"). When set,
+     the modal autoplays it muted + looping with no player chrome; otherwise it
+     shows the static screenshot. The `image` doubles as the video's poster. */
+  video?: string;
   repos?: RepoLink[];
   wip?: boolean;
 }
@@ -35,7 +35,7 @@ export const projects: Project[] = [
     name: "Asia Industrial Estate",
     url: "https://www.asiaindustrialestate.com/en",
     image: "/projects/asia-industrial-estate.png",
-    // youtubeId: "VIDEO_ID",
+    video: "/videos/aie.mp4",
     description:
       "Multilingual corporate site (TH/EN/JP/CN) with a custom master-plan management system. Next.js frontend, headless WordPress, and a Vite + Express admin dashboard.",
     longDescription:
@@ -47,6 +47,7 @@ export const projects: Project[] = [
     name: "Kailani Villa",
     url: "https://www.kailanivilla.com/",
     image: "/projects/kailani-villa.png",
+    video: "/videos/kailani.mp4",
     description:
       "Real-estate landing site built from a designer's Figma. Next.js + Tailwind frontend on headless WordPress.",
     longDescription:
@@ -58,6 +59,7 @@ export const projects: Project[] = [
     name: "The Axis Utthayan",
     url: "https://www.theaxis-utthayan.com/th",
     image: "/projects/the-axis-utthayan.png",
+    video: "/videos/the-axis.mp4",
     description:
       "Real-estate site with a custom TH/EN internationalization layer. Next.js + Tailwind on headless WordPress.",
     longDescription:
@@ -69,6 +71,7 @@ export const projects: Project[] = [
     name: "Vana Ratchapruek",
     url: "https://vana-ratchapruek-multilang.vercel.app/th",
     image: "/projects/vana-ratchapruek.png",
+    video: "/videos/vana-ratch.mp4",
     description:
       "Real-estate site with a 10-theme switchable design system built on Tailwind v4 tokens. Currently in client review.",
     longDescription:
@@ -97,6 +100,7 @@ export const projects: Project[] = [
     name: "Sudo Pals",
     url: "https://sudo-pals.vercel.app/",
     image: "/projects/sudo-pals.png",
+    video: "/videos/sudo-pals.mp4",
     description:
       "Sudoku with solo modes and real-time multiplayer rooms over Socket.IO. Next.js client, Express server.",
     longDescription:
@@ -115,6 +119,7 @@ export const projects: Project[] = [
     name: "Reversi Online",
     url: "https://reversi-rho.vercel.app/",
     image: "/projects/reversi.png",
+    video: "/videos/reversi.mp4",
     description:
       "Real-time multiplayer Reversi with live game rooms over Socket.IO. React client, Express server.",
     longDescription:

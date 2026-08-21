@@ -14,6 +14,7 @@ export default function ProjectModal({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const titleId = useId();
 
   useEffect(() => {
@@ -55,15 +56,18 @@ export default function ProjectModal({
   const reduced =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const showVideo = Boolean(project.youtubeId) && !reduced;
+  const showVideo = Boolean(project.video) && !reduced;
 
-  // Autoplay, muted, looping, no controls, and pointer-events disabled so it
-  // plays as an uninteractive scroll-through.
-  const embed = project.youtubeId
-    ? `https://www.youtube-nocookie.com/embed/${project.youtubeId}` +
-      `?autoplay=1&mute=1&loop=1&playlist=${project.youtubeId}` +
-      `&controls=0&modestbranding=1&rel=0&playsinline=1&disablekb=1`
-    : "";
+  // Belt-and-suspenders for muted autoplay (React can be inconsistent about
+  // reflecting the muted attribute in time for the autoplay policy).
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = true;
+    v.play().catch(() => {
+      /* autoplay blocked — poster stays visible, which is fine */
+    });
+  }, [showVideo]);
 
   const modal = (
     <div
@@ -92,14 +96,20 @@ export default function ProjectModal({
           ✕
         </button>
 
-        {/* Media */}
+        {/* Media — self-hosted video (no player chrome) with image poster/fallback */}
         <div className="relative aspect-video w-full shrink-0 bg-surface-2">
           {showVideo ? (
-            <iframe
-              src={embed}
-              title={`${project.name} walkthrough`}
-              allow="autoplay; encrypted-media"
-              className="pointer-events-none absolute inset-0 h-full w-full border-0"
+            <video
+              ref={videoRef}
+              src={project.video}
+              poster={project.image}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-label={`${project.name} walkthrough`}
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover object-top"
             />
           ) : project.image ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -123,6 +133,7 @@ export default function ProjectModal({
                 {project.name}
               </h3>
             </DecodeEffect>
+            <span className="terminal-cursor" />
             {project.wip && (
               <span className="rounded-[5px] border border-accent-2 px-[7px] py-[2px] font-mono text-[10px] text-accent-2">
                 in progress
